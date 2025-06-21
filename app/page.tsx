@@ -3,13 +3,14 @@
 import { useState } from "react";
 import axios from "axios";
 import { privateKeyToAccount } from "viem/accounts";
-
 import { Hex } from "viem";
+
 
 const privateKey = `0xd395aea4aa82b49e5ab9e31277ff6559431896b775bfc8e6dcd2de8ed2dfd21c` as Hex;
 
 
 export default function Home() {
+
   const [location, setLocation] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [statusCode, setStatusCode] = useState<number | null>(null);
@@ -25,7 +26,7 @@ export default function Home() {
     setResult(null);
 
     try {
-      const response = await axios.post("http://localhost:8000/weather", {
+      const response = await axios.post("http://localhost:3000/api/proxy/local-mcp-server/weather", {
         tool: "weather",
         input: { location },
       });
@@ -68,7 +69,7 @@ export default function Home() {
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         placeholder="Enter location"
-        className="p-2 border border-gray-300 rounded w-64 mb-4 text-black"
+        className="p-2 border border-gray-300 rounded w-64 mb-4 text-white"
       />
 
       <button

@@ -4,6 +4,7 @@ import { paymentMiddleware, Network, Resource } from "x402-next";
 
 
 const facilitatorUrl = "https://x402.org/facilitator";
+const _network = "base-sepolia"
 
 
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { serverId: s
   const monetizationConfig = {
     [`/api/proxy/${serverId}/${tool}`]: {
       price: toolConfig.price,
-      network: toolConfig.network as Network,  // 👈 fix right here
+      network: _network as Network,  // 👈 fix right here
       config: {
         description: `Access to ${tool} on ${serverId}`,
       },

@@ -1,0 +1,18 @@
+[
+  {
+    "recipient": "0xb29e1ddDfc73E00dEE3EaA7EA102990ADca78b39",
+    "serverId": "deed0298-8cfe-4fc9-a295-59c2cfa77709-weather_broadcast",
+    "serverName": "weather_broadcast",
+    "description": "hello ",
+    "serverUri": "http://localhost:8000",
+    "authEnabled": false,
+    "tools": [
+      {
+        "toolName": "weather",
+        "description": "Get dummy weather info",
+        "price": "10"
+      }
+    ],
+    "monetizedUri": "http://localhost:3000/api/proxy/deed0298-8cfe-4fc9-a295-59c2cfa77709-weather_broadcast"
+  }
+]

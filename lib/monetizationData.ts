@@ -21,8 +21,7 @@ export const monetizedServers = [
         toolName: "weather",   // matches your tool name here
         originalEndpoint: "http://localhost:8000/weather",
         price: "$0.01",
-        network: "base-sepolia",
-        recipient: "0xabc"
+        recipient: "0x5567D2FFdF5A9c0bBb0B79B8cD99a3a87C45dAFb"
       }
     ]
   },
