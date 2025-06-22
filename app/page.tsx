@@ -26,7 +26,7 @@ export default function Home() {
     setResult(null);
 
     try {
-      const response = await axios.post("http://localhost:3000/api/proxy/local-mcp-server/weather", {
+      const response = await axios.post("http://localhost:3000/api/proxy/deed0298-8cfe-4fc9-a295-59c2cfa77709-weather_broadcast/weather", {
         tool: "weather",
         input: { location },
       });

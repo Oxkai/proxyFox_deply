@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   };
 
   // Path to db.json
-  const dbFilePath = path.resolve("db.json");
+ const dbFilePath = path.resolve("lib", "db.json");
 
   // Read existing data or start with empty array
   const existing = (await fs.readJson(dbFilePath).catch(() => [])) as any[];

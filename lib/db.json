@@ -14,5 +14,21 @@
       }
     ],
     "monetizedUri": "http://localhost:3000/api/proxy/deed0298-8cfe-4fc9-a295-59c2cfa77709-weather_broadcast"
+  },
+  {
+    "recipient": "0x123a",
+    "serverId": "0743cf10-81b4-486c-a5f3-be9cbcda31d6-ajay",
+    "serverName": "ajay",
+    "description": "auberku",
+    "serverUri": "http://localhost:8000",
+    "authEnabled": false,
+    "tools": [
+      {
+        "toolName": "weather",
+        "description": "Get dummy weather info",
+        "price": "10"
+      }
+    ],
+    "monetizedUri": "http://localhost:3000/api/proxy/0743cf10-81b4-486c-a5f3-be9cbcda31d6-ajay"
   }
 ]
