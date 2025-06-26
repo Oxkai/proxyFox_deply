@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/server/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -43,4 +44,3 @@ yarn-error.log*
 next-env.d.ts
 
 # ignore server folder
-/server
