@@ -2,94 +2,75 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { privateKeyToAccount } from "viem/accounts";
-import { Hex } from "viem";
 
-
-const privateKey = `0xd395aea4aa82b49e5ab9e31277ff6559431896b775bfc8e6dcd2de8ed2dfd21c` as Hex;
-
+interface Tool {
+  name: string;
+  description: string;
+  inputSchema: object;
+}
 
 export default function Home() {
-
-  const [location, setLocation] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [statusCode, setStatusCode] = useState<number | null>(null);
+  const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const account = privateKeyToAccount(privateKey);
-
-  console.log('account',account)
-
-  const fetchWeather = async () => {
+  const fetchTools = async () => {
     setLoading(true);
-    setStatusCode(null);
-    setResult(null);
+    setError(null);
+    setTools([]);
 
     try {
-      const response = await axios.post("http://localhost:3000/api/proxy/deed0298-8cfe-4fc9-a295-59c2cfa77709-weather_broadcast/weather", {
-        tool: "weather",
-        input: { location },
-      });
+      const response = await axios.get("http://localhost:8000/tools");
+      console.log("Response:", response.data);
 
-      console.log("Full response:", response);
-
-      const fullResponse = {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-        data: response.data,
-      };
-
-      setStatusCode(response.status);
-      setResult(JSON.stringify(fullResponse, null, 2));
-    } catch (error: any) {
-      if (error.response) {
-        const errorResponse = {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          headers: error.response.headers,
-          data: error.response.data,
-        };
-        setStatusCode(error.response.status);
-        setResult(JSON.stringify(errorResponse, null, 2));
+      if (response.data.tools && Array.isArray(response.data.tools)) {
+        setTools(response.data.tools);
       } else {
-        setResult("Error: " + error.message);
+        setError("Unexpected response format.");
       }
+    } catch (err: any) {
+      setError("Failed to fetch tools: " + (err.message || "Unknown error"));
     }
 
     setLoading(false);
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-6 bg-black text-white">
-      <h1 className="text-3xl font-bold mb-6">Weather Checker</h1>
-
-      <input
-        type="text"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-        placeholder="Enter location"
-        className="p-2 border border-gray-300 rounded w-64 mb-4 text-white"
-      />
+    <main className="flex flex-col items-center justify-center min-h-screen p-8 bg-black text-white">
+      <h1 className="text-3xl font-bold mb-6">MCP Tools Viewer</h1>
 
       <button
-        onClick={fetchWeather}
-        disabled={!location || loading}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        onClick={fetchTools}
+        disabled={loading}
+        className="mb-6 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
       >
-        {loading ? "Fetching..." : "Get Weather"}
+        {loading ? "Fetching Tools..." : "Fetch Tools"}
       </button>
 
-      {statusCode !== null && (
-        <p className="mt-4 text-lg">
-          Status Code: <span className="font-bold">{statusCode}</span>
-        </p>
-      )}
+      {error && <p className="text-red-500 mb-4">{error}</p>}
 
-      {result && (
-        <pre className="mt-4 p-4 bg-white text-black border rounded w-full max-w-2xl overflow-auto">
-          {result}
-        </pre>
+      {tools.length > 0 && (
+        <div className="text-left w-full max-w-3xl bg-white text-black p-4 rounded">
+          <h2 className="text-xl font-bold mb-4">Available Tools ({tools.length})</h2>
+          <ul className="space-y-4">
+            {tools.map((tool, index) => (
+              <li key={index} className="border-b pb-4">
+                <p>
+                  <strong>Name:</strong> {tool.name}
+                </p>
+                <p>
+                  <strong>Description:</strong> {tool.description}
+                </p>
+                <div className="mt-2">
+                  <strong>Input Schema:</strong>
+                  <pre className="bg-gray-100 p-2 mt-1 rounded overflow-auto">
+                    {JSON.stringify(tool.inputSchema, null, 2)}
+                  </pre>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </main>
   );

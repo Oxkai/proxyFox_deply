@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Rajdhani } from "next/font/google";
 import "./globals.css";
 import Header from "../components/header";
+import Footer from "../components/footer";
+
+const rajdhani = Rajdhani({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],  // choose the weights you need
+  variable: "--font-rajdhani",
+});
+
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,12 +33,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={rajdhani.variable}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-       <Header/>
-      {children}
+        <div className="flex flex-col pt-[14px] pb-[14px] gap-[100px]">
+        <Header/>
+        {children}
+        <Footer/>
+        </div>
+      
       </body>
     </html>
   );
