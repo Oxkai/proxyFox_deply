@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { paymentMiddleware, Network } from "x402-next";
 import fs from "fs";
 import path from "path";
-import { baseSepolia } from "viem/chains";
 
 const facilitatorUrl = "https://x402.org/facilitator";
 const _network = "base-sepolia";
@@ -52,92 +51,63 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  // Get headers for both middleware and forwarding
+  // Collect headers
   const requestHeaders: Record<string, string> = {
     "Content-Type": "application/json",
     "Content-Length": new Blob([bodyText]).size.toString(),
   };
 
-  // Forward optional headers
-  const authorization = req.headers.get("authorization");
-  if (authorization) requestHeaders["Authorization"] = authorization;
+  const copyHeader = (name: string) => {
+    const value = req.headers.get(name);
+    if (value) requestHeaders[name] = value;
+  };
 
-  const userAgent = req.headers.get("user-agent");
-  if (userAgent) requestHeaders["User-Agent"] = userAgent;
-
-  const xForwardedFor = req.headers.get("x-forwarded-for");
-  if (xForwardedFor) requestHeaders["X-Forwarded-For"] = xForwardedFor;
-
-  const xPayment = req.headers.get("x-payment");
-  if (xPayment) requestHeaders["X-PAYMENT"] = xPayment;
-
-  if (xPayment) {
-    try {
-      const decodedProof = JSON.parse(
-        Buffer.from(xPayment, "base64").toString("utf-8")
-      );
-      console.log("✅ Decoded X-PAYMENT proof:", decodedProof);
-
-      // Optional expiry check (maxTimeoutSeconds = 300)
-      const maxTimeoutSeconds = 300;
-      const now = Date.now();
-      const expiry = decodedProof.timestamp + maxTimeoutSeconds * 1000;
-
-      if (now > expiry) {
-        console.log(
-          `⚠️ Payment proof expired. Now: ${now}, Proof Expiry: ${expiry} (diff: ${
-            (now - expiry) / 1000
-          }s)`
-        );
-      } else {
-        console.log(
-          `✅ Payment proof valid. Expires in ${(expiry - now) / 1000}s`
-        );
-      }
-    } catch (err) {
-      console.error("❌ Failed to decode X-PAYMENT proof:", err);
-    }
-  } else {
-    console.log("❌ No X-PAYMENT header received.");
-  }
+  ["authorization", "user-agent", "x-forwarded-for", "x-payment"].forEach(copyHeader);
 
   console.log("📜 Final request headers:", requestHeaders);
 
-  // Create fresh request with all headers including X-PAYMENT
+  // Create fresh request for middleware
   const freshRequest = new NextRequest(req.url, {
     method: req.method,
     headers: requestHeaders,
     body: bodyText,
   });
 
-  console.log("📜 X-PAYMENT header in fresh request:", freshRequest.headers.get("x-payment"));
-  console.log("📨 Created fresh NextRequest for payment middleware");
+  const xPaymentHeader = freshRequest.headers.get("x-payment");
+  console.log("📜 X-PAYMENT header in fresh request:", xPaymentHeader);
 
-  const monetizationConfig = {
-    [`/api/proxy/${serverId}/${tool}`]: {
-      price: toolConfig.price,
-      network: _network as Network,
-      config: {
-        description: `Access to ${tool} on ${serverConfig.serverName}`,
-        mimeType: "application/json",
-        maxTimeoutSeconds: 300,
+  if (!xPaymentHeader) {
+    console.log("🛑 No X-PAYMENT header — enforcing payment via middleware");
+
+    const monetizationConfig = {
+      [`/api/proxy/${serverId}/${tool}`]: {
+        price: {
+          amount: toolConfig.price,
+          asset: {
+            address: toolConfig.asset,
+            decimals: 6,
+            eip712: {
+              name: "USDC",
+              version: "2",
+            },
+          },
+        },
+        network: _network as Network,
+        config: {
+          description: `Access to ${tool} on ${serverConfig.serverName}`,
+          mimeType: "application/json",
+          maxTimeoutSeconds: 300,
+        },
       },
-    },
-  };
-  console.log("💰 Monetization config prepared:", monetizationConfig);
+    };
 
-  const mw = paymentMiddleware(
-    serverConfig.recipient as `0x${string}`,
-    monetizationConfig,
-    {
-      url: facilitatorUrl,
-    }
-  );
-  console.log("⚙️ Payment middleware instantiated");
+    const mw = paymentMiddleware(
+      serverConfig.recipient as `0x${string}`,
+      monetizationConfig,
+      { url: facilitatorUrl }
+    );
+    console.log("⚙️ Payment middleware instantiated");
 
-  try {
-    console.log("🚀 Running payment middleware");
-    // CRITICAL FIX: Pass freshRequest instead of req
     const monetizationResult = await mw(freshRequest);
     console.log("💸 Payment middleware result:", monetizationResult);
 
@@ -145,68 +115,53 @@ export async function POST(req: NextRequest) {
       console.log("❌ Payment failed");
       return monetizationResult;
     }
+  } else {
+    console.log("✅ X-PAYMENT header present — bypassing middleware");
+  }
 
-    const forwardHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (userAgent) {
-      forwardHeaders["User-Agent"] = userAgent;
+  // Forward request to upstream server
+  const forwardHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  const userAgent = req.headers.get("user-agent");
+  if (userAgent) {
+    forwardHeaders["User-Agent"] = userAgent;
+  }
+  console.log("✅ Parsed body:", parsedBody);
+
+
+  console.log(JSON.stringify({
+    tool,
+    input: parsedBody.input,
+  }))
+  console.log(`📤 Forwarding request to ${serverConfig.serverUri}/${tool}`);
+  console.log(`📤 Forwarding request to ${serverConfig.serverUri}/${tool}`);
+  const response = await fetch(`${serverConfig.serverUri}/${tool}`, {
+  method: "POST",
+  headers: forwardHeaders,
+  body: JSON.stringify({
+    tool: "weather",
+    input: {
+      text: "Hello MCP!"
     }
+  }),
+});
 
-    console.log(`📤 Forwarding request to ${serverConfig.serverUri}/tool/${tool}`);
-    const response = await fetch(`${serverConfig.serverUri}/tool/${tool}`, {
-      method: "POST",
-      headers: forwardHeaders,
-      body: JSON.stringify(parsedBody),
-    });
 
-    console.log(`📥 Upstream response status: ${response.status}`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Upstream server error: ${response.status} ${response.statusText}`, errorText);
-      return NextResponse.json(
-        {
-          error: `Upstream server error: ${response.status}`,
-          details: errorText,
-        },
-        { status: response.status }
-      );
-    }
+  console.log(`📥 Upstream response status: ${response.status}`);
 
-    const result = await response.json();
-    console.log("✅ Final upstream result:", result);
-    return NextResponse.json(result);
-
-  } catch (err) {
-    console.error("❌ Error in monetized proxy:", err);
-
-    if (err instanceof TypeError && err.message.includes("fetch failed")) {
-      return NextResponse.json(
-        {
-          error: "Failed to process payment or connect to upstream server",
-          details: err.message,
-        },
-        { status: 500 }
-      );
-    }
-
-    if (err instanceof SyntaxError) {
-      return NextResponse.json(
-        {
-          error: "Invalid response from upstream server",
-          details: err.message,
-        },
-        { status: 502 }
-      );
-    }
-
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ Upstream server error: ${response.status} ${response.statusText}`, errorText);
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: err instanceof Error ? err.message : String(err),
-      },
-      { status: 500 }
+      { error: `Upstream server error: ${response.status}`, details: errorText },
+      { status: response.status }
     );
   }
+
+  const result = await response.json();
+  console.log("✅ Final upstream result:", result);
+  return NextResponse.json(result);
 }

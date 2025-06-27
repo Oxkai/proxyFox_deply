@@ -8,7 +8,8 @@ type Tool = {
   description: string;
 };
 
-export default function page1() {
+
+export default function Page1() {
    const [wallet, setWallet] = useState("");
   const [serverUri, setServerUri] = useState("");
   const [serverName, setServerName] = useState("");

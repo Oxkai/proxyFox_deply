@@ -10,8 +10,6 @@ const rajdhani = Rajdhani({
   variable: "--font-rajdhani",
 });
 
-
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

@@ -10,43 +10,10 @@
       {
         "toolName": "weather",
         "description": "Get weather information for a location",
-        "price": "$1.2"
-      },
-      {
-        "toolName": "calculate",
-        "description": "Perform mathematical calculations with support for complex expressions",
-        "price": "$0.00"
-      },
-      {
-        "toolName": "text_analysis",
-        "description": "Analyze text for various metrics and properties",
-        "price": "$0.00"
-      },
-      {
-        "toolName": "hash",
-        "description": "Generate cryptographic hashes for text or data",
-        "price": "$0.00"
-      },
-      {
-        "toolName": "uuid",
-        "description": "Generate UUIDs in various formats",
-        "price": "$0.00"
-      },
-      {
-        "toolName": "base64",
-        "description": "Encode or decode base64 data",
-        "price": "$0.00"
-      },
-      {
-        "toolName": "timestamp",
-        "description": "Work with timestamps and date conversions",
-        "price": "$0.00"
-      },
-      {
-        "toolName": "json",
-        "description": "Validate, format, and manipulate JSON data",
-        "price": "$0.00"
+        "price": "1200000",
+        "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
       }
+    
     ],
     "monetizedUri": "http://localhost:3000/api/proxy/61f1b4b7-d495-48dd-b333-f84bb4a09ab1-weather_broad"
   }

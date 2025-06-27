@@ -10,7 +10,16 @@ interface DebugLog {
   timestamp: string;
 }
 
-export default function X402DebugComponent() {
+type EIP712Domain = {
+  name: string;
+  version: string;
+  chainId: bigint;
+  verifyingContract: `0x${string}`;
+};
+
+
+
+export default function Page() {
   const [responseData, setResponseData] = useState<any>(null);
   const [paymentInfo, setPaymentInfo] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +60,7 @@ const walletClient = createWalletClient({
   chain: baseSepolia,
   transport: http('https://sepolia.base.org'),
 });
-
-  const handleManualPayment = async () => {
+const handleManualPayment = async () => {
   setLoading(true);
   setError(null);
   setResponseData(null);
@@ -61,96 +69,146 @@ const walletClient = createWalletClient({
 
   const baseURL = "http://localhost:3000";
   const endpointPath = "/api/proxy/61f1b4b7-d495-48dd-b333-f84bb4a09ab1-weather_broad/weather";
+  const resourceUrl = `${baseURL}${endpointPath}`;
 
-  addLog("🚀 Starting manual payment flow");
+  addLog("🚀 Starting EIP-3009 payment flow");
   addLog(`Account address: ${account.address}`);
 
   try {
-    // Step 1: Make initial request to get payment requirements
+    // Step 1: Initial request to get payment requirements
     addLog("📞 Making initial request to get payment requirements");
 
-    const initialResponse = await fetch(`${baseURL}${endpointPath}`, {
+    const initialResponse = await fetch(resourceUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        location: "new york",
-        units: "celsius",
-      }),
+  "tool": "weather",
+  "input": { "text": "Hello MCP!" }
+}),
     });
 
-    if (initialResponse.status === 402) {
-      const paymentRequired = await initialResponse.json();
-      addLog("💰 Received 402 Payment Required", "success");
-      addLog(`Payment details: ${JSON.stringify(paymentRequired, null, 2)}`);
+    if (initialResponse.status !== 402) {
+      addLog(`❌ Expected 402 but got ${initialResponse.status}`, "error");
+      const errorText = await initialResponse.text();
+      setError(errorText);
+      return;
+    }
 
-      const acceptsInfo = paymentRequired.accepts[0];
-      setPaymentInfo(acceptsInfo);
+    const paymentRequired = await initialResponse.json();
+    addLog("💰 Received 402 Payment Required", "success");
+    addLog(`Payment details: ${JSON.stringify(paymentRequired, null, 2)}`);
 
-      // Step 2: Send real payment transaction
-      addLog("🔐 Sending real payment transaction");
+    const acceptsInfo = paymentRequired.accepts[0];
+    setPaymentInfo(acceptsInfo);
 
-const amountInWei = BigInt(acceptsInfo.maxAmountRequired);
+    // Step 2: Create and sign EIP-3009 authorization
+    addLog("📝 Creating and signing EIP-3009 TransferWithAuthorization");
 
-      const tokenContract = getContract({
-        address: acceptsInfo.asset as `0x${string}`,
-        abi: erc20Abi,
-        client: walletClient,
-      });
+    const validAfter = BigInt(Math.floor(Date.now() / 1000) - 600);
+    const validBefore = BigInt(Math.floor(Date.now() / 1000) + 300);
+const nonce = `0x${crypto.getRandomValues(new Uint8Array(32)).reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "")}` as `0x${string}`;
 
-      const txHash = await tokenContract.write.transfer([acceptsInfo.payTo, amountInWei]);
+    // ✅ EIP-712 Type Definitions
+    const authorizationTypes = {
+      EIP712Domain: [
+        { name: "name", type: "string" },
+        { name: "version", type: "string" },
+        { name: "chainId", type: "uint256" },
+        { name: "verifyingContract", type: "address" },
+      ],
+      TransferWithAuthorization: [
+        { name: "from", type: "address" },
+        { name: "to", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "validAfter", type: "uint256" },
+        { name: "validBefore", type: "uint256" },
+        { name: "nonce", type: "bytes32" },
+      ],
+    } as const;
 
-      addLog(`📦 Transaction sent: ${txHash}`);
+    // ✅ EIP-712 Domain
+    const domain = {
+      name: "USD Coin",
+      version: "2",
+      chainId: BigInt(baseSepolia.id),
+      verifyingContract: acceptsInfo.asset as `0x${string}`,
+    };
 
-      // Wait for confirmation
-      await publicClient.waitForTransactionReceipt({ hash: txHash });
-      addLog("✅ Transaction confirmed");
+    // ✅ Message Payload
+    const authorizationMessage = {
+      from: account.address,
+      to: acceptsInfo.payTo,
+      value: BigInt(acceptsInfo.maxAmountRequired),
+      validAfter,
+      validBefore,
+      nonce,
+    };
 
-      // Step 3: Create payment proof
-      const paymentProof = {
-        scheme: "exact",
-        network: "base-sepolia",
-        txHash,
-        amount: acceptsInfo.maxAmountRequired,
-        asset: acceptsInfo.asset,
-        payTo: acceptsInfo.payTo,
-        timestamp: Date.now(),
-      };
+    // ✅ Sign EIP-712 Typed Data
+    const signature = await walletClient.signTypedData<
+  typeof authorizationTypes, 
+  "TransferWithAuthorization"
+>({
+  account,
+  domain,
+  types: authorizationTypes,
+  primaryType: "TransferWithAuthorization",
+  message: authorizationMessage,
+});
 
-      addLog(`✅ Payment proof created: ${JSON.stringify(paymentProof, null, 2)}`);
+    addLog(`✅ EIP-3009 signature: ${signature}`);
 
-      // Step 4: Retry request with payment header
-      addLog("🔄 Retrying request with payment proof");
+    // Step 3: Construct payment proof payload
+    const paymentProof = {
+      scheme: "exact",
+      network: "base-sepolia",
+      asset: acceptsInfo.asset,
+      payTo: acceptsInfo.payTo,
+      payer: account.address,
+      value: acceptsInfo.maxAmountRequired,
+      validAfter: validAfter.toString(),
+      validBefore: validBefore.toString(),
+      nonce,
+      signature,
+      x402Version: 2,
+    };
 
-      const paymentHeader = btoa(JSON.stringify(paymentProof)); // base64 encode
+    addLog(`📦 Payment proof created: ${JSON.stringify(paymentProof, null, 2)}`);
 
-      const retryResponse = await fetch(`${baseURL}${endpointPath}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-PAYMENT": paymentHeader,
-        },
-        body: JSON.stringify({
-          location: "new york",
-          units: "celsius",
-        }),
-      });
+    // Step 4: Retry request with payment proof header
+    addLog("🔄 Retrying request with X-PAYMENT header");
 
-      if (retryResponse.ok) {
-        const data = await retryResponse.json();
-        setResponseData(data);
-        addLog("✅ Payment successful, received data", "success");
-      } else {
-        const errorData = await retryResponse.json();
+    const paymentHeader = btoa(JSON.stringify(paymentProof));
+
+const retryResponse = await fetch(resourceUrl, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-PAYMENT": paymentHeader,
+  },
+  body: JSON.stringify({
+    tool: "weather",
+    input: {
+      text: "Hello MCP!"
+    }
+  }),
+});
+
+
+    if (retryResponse.ok) {
+      const data = await retryResponse.json();
+      setResponseData(data);
+      addLog("✅ Payment successful, data received", "success");
+    } else {
+      const errorText = await retryResponse.text();
+      try {
+        const errorData = JSON.parse(errorText);
         addLog(`❌ Payment validation failed: ${JSON.stringify(errorData, null, 2)}`, "error");
         setError(JSON.stringify(errorData, null, 2));
+      } catch {
+        addLog(`❌ Payment validation failed: ${errorText}`, "error");
+        setError(errorText);
       }
-
-    } else {
-      addLog("❌ Expected 402 status but got: " + initialResponse.status, "error");
-      const errorData = await initialResponse.text();
-      setError(errorData);
     }
 
   } catch (err: unknown) {
@@ -161,6 +219,9 @@ const amountInWei = BigInt(acceptsInfo.maxAmountRequired);
     setLoading(false);
   }
 };
+
+
+
 
   const handleWithInterceptor = async () => {
     setLoading(true);
@@ -204,10 +265,15 @@ const amountInWei = BigInt(acceptsInfo.maxAmountRequired);
           account
         );
 
-        const response = await api.post("/api/proxy/61f1b4b7-d495-48dd-b333-f84bb4a09ab1-weather_broad/weather", {
-          location: "new york",
-          units: "celsius",
-        });
+  const response = await api.post(
+  "/api/proxy/61f1b4b7-d495-48dd-b333-f84bb4a09ab1-weather_broad/weather",
+  {
+    tool: "weather",
+    input: {
+      text: "Hello, MCP!"
+    }
+  }
+);
 
         setResponseData(response.data);
         addLog("✅ Interceptor request successful", "success");
