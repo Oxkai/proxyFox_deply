@@ -1,3 +1,9 @@
+<p align="left">
+  <img src="./logo.png" alt="ProxyFox Logo" width="50" style="vertical-align:middle; margin-right:10px"/>
+  <strong style="font-size:32px">ProxyFox</strong>
+</p>
+
+
 # ProxyFox
 
 ## Table of Contents
