@@ -72,6 +72,10 @@ ProxyFox relies on the **x402 protocol** (by Coinbase) for on-chain payments ove
 This entire flow happens at the HTTP protocol layer, making payments as seamless as normal web requests. In practice, ProxyFox (or its middleware) handles sending the 402 challenge, verifying the incoming `X-PAYMENT`, and settling the payment on Base. The server does not need to manage accounts or store credit card data – it simply enforces that the correct stablecoin payment is attached to each request.
 
 
+<p align="center">
+  <img src="./public/diagram.png" alt="ProxyFox Architecture Diagram" style="width:100%; max-width:1000px; display:block; margin: 0 auto;"/>
+</p>
+
 
 
 ## Frontend Wallet Integration
