@@ -1,7 +1,7 @@
 'use client'
 import { useState } from "react";
 import { privateKeyToAccount } from "viem/accounts";
-import { createPublicClient, createWalletClient, http,  } from 'viem';
+import {  createWalletClient, http,  } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
 interface DebugLog {
@@ -10,11 +10,49 @@ interface DebugLog {
   timestamp: string;
 }
 
+declare global {
+  interface Window {
+    withPaymentInterceptor?: (
+      client: {
+        create: (config: InterceptorConfig) => InterceptorInstance;
+      },
+      account?: unknown // type this if you know what `account` is
+    ) => InterceptorInstance;
+  }
+
+  interface InterceptorConfig {
+    baseURL: string;
+  }
+
+  interface InterceptorInstance {
+    post: (url: string, data: unknown) => Promise<{
+      data: unknown;
+      status: number;
+      headers: Record<string, string>;
+    }>;
+  }
+}
+
+
+interface ResponseData {
+  // define properties if you know them
+  [key: string]: any;
+}
+
+interface PaymentInfo {
+  [key: string]: any;
+}
+
+interface ResponseData {
+  success: boolean;
+  message: string;
+  // etc...
+}
 
 
 export default function Page() {
-  const [responseData, setResponseData] = useState<any>(null);
-  const [paymentInfo, setPaymentInfo] = useState<any>(null);
+const [responseData, setResponseData] = useState<ResponseData | null>(null);
+const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
@@ -196,77 +234,6 @@ const retryResponse = await fetch(resourceUrl, {
 };
 
 
-
-
-  const handleWithInterceptor = async () => {
-    setLoading(true);
-    setError(null);
-    setResponseData(null);
-    setPaymentInfo(null);
-    setDebugLogs([]);
-
-    addLog("🚀 Testing with payment interceptor");
-
-    try {
-      // Check if withPaymentInterceptor is available
-      if (typeof window !== 'undefined' && (window as any).withPaymentInterceptor) {
-        const api = (window as any).withPaymentInterceptor(
-          // Create axios-like instance
-          {
-            create: (config: any) => ({
-              post: async (url: string, data: any) => {
-                addLog(`Making POST request to: ${config.baseURL}${url}`);
-                const response = await fetch(`${config.baseURL}${url}`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(data),
-                });
-                
-                if (!response.ok && response.status !== 402) {
-                  throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const responseData = await response.json();
-                return {
-                  data: responseData,
-                  status: response.status,
-                  headers: Object.fromEntries(response.headers.entries())
-                };
-              }
-            })
-          },
-          account
-        );
-
-  const response = await api.post(
-  "/api/proxy/61f1b4b7-d495-48dd-b333-f84bb4a09ab1-weather_broad/weather",
-  {
-    tool: "weather",
-    input: {
-      text: "Hello, MCP!"
-    }
-  }
-);
-
-        setResponseData(response.data);
-        addLog("✅ Interceptor request successful", "success");
-
-      } else {
-        addLog("❌ withPaymentInterceptor not available", "error");
-        setError("withPaymentInterceptor not available in this environment");
-      }
-
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      addLog(`❌ Interceptor request failed: ${errorMessage}`, "error");
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">X402 Payment Debug Tool</h1>
@@ -280,13 +247,7 @@ const retryResponse = await fetch(resourceUrl, {
           {loading ? "Processing..." : "Test Manual Payment Flow"}
         </button>
         
-        <button
-          onClick={handleWithInterceptor}
-          disabled={loading}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-        >
-          {loading ? "Processing..." : "Test With Interceptor"}
-        </button>
+    
       </div>
 
       {debugLogs.length > 0 && (

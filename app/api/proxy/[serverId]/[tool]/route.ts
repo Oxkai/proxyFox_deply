@@ -3,6 +3,25 @@ import { paymentMiddleware, Network } from "x402-next";
 import fs from "fs";
 import path from "path";
 
+interface ToolConfig {
+  toolName: string;
+  description: string;
+  price: string;
+  asset: string;
+}
+
+interface ServerConfig {
+  recipient: string;
+  serverId: string;
+  serverName: string;
+  description: string;
+  serverUri: string;
+  authEnabled: boolean;
+  tools: ToolConfig[];
+  monetizedUri: string;
+}
+
+
 const facilitatorUrl = "https://x402.org/facilitator";
 const _network = "base-sepolia";
 
@@ -22,7 +41,8 @@ export async function POST(req: NextRequest) {
   console.log(`🔍 Extracted serverId: ${serverId}, tool: ${tool}`);
 
   const monetizedServers = getServerConfig();
-  const serverConfig = monetizedServers.find((s: any) => s.serverId === serverId);
+  const serverConfig = monetizedServers.find((s: ServerConfig) => s.serverId === serverId);
+
   console.log(`🗂 Found server config:`, serverConfig);
 
   if (!serverConfig) {
@@ -30,7 +50,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unknown server ID" }, { status: 404 });
   }
 
-  const toolConfig = serverConfig.tools.find((t: any) => t.toolName === tool);
+  const toolConfig = serverConfig.tools.find((t: ToolConfig) => t.toolName === tool);
+
   console.log(`🛠 Found tool config:`, toolConfig);
 
   if (!toolConfig) {

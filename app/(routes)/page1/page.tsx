@@ -40,7 +40,7 @@ export default function Page1() {
        
       }
     } catch (err: unknown) {
-     
+     console.error(err);
     }
 
     

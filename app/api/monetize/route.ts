@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
  const dbFilePath = path.resolve("lib", "db.json");
 
   // Read existing data or start with empty array
-  const existing = (await fs.readJson(dbFilePath).catch(() => [])) as any[];
+  const existing = (await fs.readJson(dbFilePath).catch(() => [])) as unknown[];
 
   // Add new config
   existing.push(newConfig);

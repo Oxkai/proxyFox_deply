@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+
+
+
+interface ToolConfig {
+  toolName: string;
+  description: string;
+  price: string;
+  asset: string;
+}
+
+interface ServerConfig {
+  recipient: string;
+  serverId: string;
+  serverName: string;
+  description: string;
+  serverUri: string;
+  authEnabled: boolean;
+  tools: ToolConfig[];
+  monetizedUri: string;
+}
+
 function getServerConfig() {
   const filePath = path.join(process.cwd(), "lib", "db.json");
   const jsonData = fs.readFileSync(filePath, "utf-8");
@@ -13,7 +34,7 @@ export async function GET(req: NextRequest) {
   const serverId = pathnameParts[3];
 
   const monetizedServers = getServerConfig();
-  const serverConfig = monetizedServers.find((s: any) => s.serverId === serverId);
+  const serverConfig = monetizedServers.find((s: ServerConfig) => s.serverId === serverId);
 
   if (!serverConfig) {
     return NextResponse.json({ error: "Unknown server ID" }, { status: 404 });
