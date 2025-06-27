@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { EIP1193Provider } from 'viem'
-
 import { useState } from "react";
 import { ethers } from "ethers";
+import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -16,7 +16,11 @@ declare global {
 
 
 export default function Header() {
+    const router = useRouter();
 
+  const handlePage = () => {
+    router.push('/');
+  };
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   const connectWallet = async () => {
@@ -49,15 +53,17 @@ export default function Header() {
   ];
   return (
     <div className="flex flex-row w-full  px-5 justify-between items-center">
-      <div className="flex flex-row w-[123px] h-[35.321px] px-2.5 py-2.5 justify-center items-center gap-2.5 shrink-0">
+      <div 
+      onClick={handlePage}
+      className="flex flex-row w-[150px] h-[35.321px] pl-[16px] py-2.5 justify-center items-center gap-2.5 shrink-0">
         <h1 className="text-[#ededed] font-['Rajdhani'] text-xl font-semibold tracking-[4.6px]">
-          CAESER
+          PROXY FOX
         </h1>
       </div>
        
 
 
-      <div className="flex flex-row items-center gap-8">
+      <div className="flex flex-row items-center pr-[70px] gap-8">
          {navItems.map((item) => (
           <Link
             key={item.href}
