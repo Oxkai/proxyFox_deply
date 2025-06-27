@@ -1,10 +1,10 @@
 <p align="left">
-  <img src="./public/logo.png" alt="ProxyFox Logo" width="70" style="vertical-align:middle; margin-right:10px"/>
-  <strong style="font-size:32px">ProxyFox</strong>
+  <img src="./public/logo.png" alt="ProxyFox Logo" width="100" style="vertical-align:middle; margin-right:10px"/>
 </p>
 
 
 
+#ProxyFox
 
 ## Table of Contents
 
