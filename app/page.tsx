@@ -35,13 +35,13 @@ declare global {
 
 
 interface ResponseData {
-  // define properties if you know them
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface PaymentInfo {
-  [key: string]: any;
+  [key: string]: unknown;
 }
+
 
 interface ResponseData {
   success: boolean;
