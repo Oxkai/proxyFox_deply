@@ -1,13 +1,13 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { EIP1193Provider } from 'viem'
 
 import { useState } from "react";
 import { ethers } from "ethers";
 
 declare global {
   interface Window {
-    ethereum?: any;
+    ethereum?: EIP1193Provider;
   }
 }
 
@@ -17,7 +17,6 @@ declare global {
 
 export default function Header() {
 
-  const pathname = usePathname(); 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   const connectWallet = async () => {

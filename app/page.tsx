@@ -1,7 +1,7 @@
 'use client'
 import { useState } from "react";
 import { privateKeyToAccount } from "viem/accounts";
-import { createPublicClient, createWalletClient, http, parseUnits, getContract,  } from 'viem';
+import { createPublicClient, createWalletClient, http,  } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
 interface DebugLog {
@@ -9,13 +9,6 @@ interface DebugLog {
   type: string;
   timestamp: string;
 }
-
-type EIP712Domain = {
-  name: string;
-  version: string;
-  chainId: bigint;
-  verifyingContract: `0x${string}`;
-};
 
 
 
@@ -34,26 +27,8 @@ export default function Page() {
 
   
 
-// Minimal ERC-20 ABI
-const erc20Abi = [
-  {
-    "constant": false,
-    "inputs": [
-      { "name": "_to", "type": "address" },
-      { "name": "_value", "type": "uint256" }
-    ],
-    "name": "transfer",
-    "outputs": [{ "name": "", "type": "bool" }],
-    "type": "function"
-  }
-];
 
 
-
-  const publicClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http('https://sepolia.base.org'),
-});
 
 const walletClient = createWalletClient({
   account,

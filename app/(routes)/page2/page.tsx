@@ -8,6 +8,14 @@ import { Hex } from "viem";
 
 const privateKey = `0xd395aea4aa82b49e5ab9e31277ff6559431896b775bfc8e6dcd2de8ed2dfd21c` as Hex;
 
+interface CustomError {
+  response: {
+    status: number;
+    statusText: string;
+    headers: Record<string, unknown>;
+    data: unknown;
+  };
+}
 
 export default function Home() {
 
@@ -42,20 +50,23 @@ export default function Home() {
 
       setStatusCode(response.status);
       setResult(JSON.stringify(fullResponse, null, 2));
-    } catch (error: any) {
-      if (error.response) {
-        const errorResponse = {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          headers: error.response.headers,
-          data: error.response.data,
-        };
-        setStatusCode(error.response.status);
-        setResult(JSON.stringify(errorResponse, null, 2));
-      } else {
-        setResult("Error: " + error.message);
-      }
-    }
+    } catch (error: unknown) {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const err = error as CustomError;
+    const errorResponse = {
+      status: err.response.status,
+      statusText: err.response.statusText,
+      headers: err.response.headers,
+      data: err.response.data,
+    };
+    setStatusCode(err.response.status);
+    setResult(JSON.stringify(errorResponse, null, 2));
+  } else if (error instanceof Error) {
+    setResult("Error: " + error.message);
+  } else {
+    setResult("An unknown error occurred.");
+  }
+}
 
     setLoading(false);
   };
