@@ -12,7 +12,7 @@ type Server = {
 };
 
 
-export default function page3() {
+export default function Page3() {
 const servers: Server[] = data;
 
 
